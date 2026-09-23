@@ -1,13 +1,19 @@
 name: run
 on:
+  schedule:
+    - cron: "30 21,9 * * *"
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   run:
     strategy:
       fail-fast: false
       matrix:
-        g: [0, 1]
+        g: [0, 1, 2, 3, 4]
+        p: [0, 1]
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     env:
       K: ${{ secrets.K }}
     steps:
@@ -16,5 +22,12 @@ jobs:
           pip install -q playwright fast-flights==3.0.2
           python3 -m playwright install --with-deps chromium > /dev/null
       - run: |
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K -in a.bin -out a
-          python3 a
+          for f in a b; do openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K -in $f.bin -out $f; done
+          python3 a ${{ matrix.g }} ${{ matrix.p }} out.gz
+      - run: openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:K -in out.gz -out data.bin
+      - run: |
+          T=g${{ matrix.g }}p${{ matrix.p }}
+          gh release view $T >/dev/null 2>&1 || gh release create $T --title $T --notes ""
+          gh release upload $T data.bin --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
