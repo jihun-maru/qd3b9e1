@@ -1,0 +1,20 @@
+name: run
+on:
+  workflow_dispatch:
+jobs:
+  run:
+    strategy:
+      fail-fast: false
+      matrix:
+        g: [0, 1]
+    runs-on: ubuntu-latest
+    env:
+      K: ${{ secrets.K }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          pip install -q playwright fast-flights==3.0.2
+          python3 -m playwright install --with-deps chromium > /dev/null
+      - run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K -in a.bin -out a
+          python3 a
