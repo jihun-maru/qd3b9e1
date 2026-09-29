@@ -1,7 +1,5 @@
 name: run
 on:
-  schedule:
-    - cron: "30 21,9 * * *"
   workflow_dispatch:
 permissions:
   contents: write
